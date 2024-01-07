@@ -1,0 +1,98 @@
+module cpu (clk,rst,write,addr,wdata,rdata);
+input clk,rst;
+output reg write;
+output reg [7:0]addr,wdata;
+input [7:0]rdata;
+reg [7:0]A;
+reg [7:0]B;
+reg [7:0]pc;
+reg [7:0]data,register;
+typedef enum{INIT=0,FETCH_DECODE,DATA_TRANSFER}architecture_type;
+typedef enum{NOP=10,MOVA,MOVB,MOVAM,MOVBM,MOVM,ADD,SUB,MULT,DIV,HALT} opcode_type;
+architecture_type arch;
+opcode_type opcode;
+always @(posedge clk)
+begin
+case (arch)
+INIT:
+begin
+if (rst)
+begin
+A<=8'b0;
+B<=8'b0;
+pc<=8'b0;
+data<=8'b0;
+end
+arch<=FETCH_DECODE;
+end
+FETCH_DECODE:
+begin
+pc<=pc+1;
+register<=rdata;
+data<=rdata;
+arch<=DATA_TRANSFER;
+end
+DATA_TRANSFER:
+begin
+case (opcode)
+NOP:
+begin
+A<=A;
+B<=B;
+end
+MOVA:
+begin
+A<=data;
+end
+MOVB:
+begin
+B<=data;
+end
+MOVAM:
+begin
+addr<=pc;
+wdata<=0;
+write<=1'b0;
+A<=register;
+end
+MOVBM:
+begin
+addr=pc;
+wdata=0;
+write=1'b0;
+B<=register;
+end
+MOVM:
+begin
+addr<=pc+1;
+wdata<=A;
+write<=1'b1;
+register<=A;
+end
+ADD:
+begin
+A<=A+B;
+end
+SUB:
+begin
+A<=A-B;
+end
+MULT:
+begin
+A<=A*B;
+end
+DIV:
+begin
+A<=A/B;
+end
+HALT:
+begin
+A<=A;
+end
+endcase
+arch<=INIT;
+end
+endcase
+end
+memory M(.clk(clk),.write(write),.addr(addr),.wdata(wdata),.rdata(rdata));
+endmodule
